@@ -216,8 +216,8 @@ class EpisodeStats:
         self.episode_rewards = []
         for i in range(nenvs):
             self.episode_rewards.append([])
-        self.lenbuffer = deque(maxlen=40)  # rolling buffer for episode lengths
-        self.rewbuffer = deque(maxlen=40)  # rolling buffer for episode rewards
+        self.lenbuffer = deque(maxlen=nsteps*nenvs*10)  # rolling buffer for episode lengths
+        self.rewbuffer = deque(maxlen=nsteps*nenvs*10)  # rolling buffer for episode rewards
         self.nsteps = nsteps
         self.nenvs = nenvs
 
