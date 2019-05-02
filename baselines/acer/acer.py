@@ -58,7 +58,7 @@ def q_retrace(R, D, q_i, v, rho_i, nenvs, nsteps, gamma):
 class Model(object):
     def __init__(self, policy, ob_space, ac_space, nenvs, nsteps, ent_coef, q_coef, gamma, max_grad_norm, lr,
                  rprop_alpha, rprop_epsilon, total_timesteps, lrschedule,
-                 c, trust_region, alpha, delta):
+                 c, trust_region, alpha, delta,name=""):
 
         sess = get_session()
         nact = ac_space.n
@@ -73,13 +73,13 @@ class Model(object):
 
         step_ob_placeholder = tf.placeholder(dtype=ob_space.dtype, shape=(nenvs,) + ob_space.shape)
         train_ob_placeholder = tf.placeholder(dtype=ob_space.dtype, shape=(nenvs*(nsteps+1),) + ob_space.shape)
-        with tf.variable_scope('acer_model', reuse=tf.AUTO_REUSE):
+        with tf.variable_scope('acer_model'+name, reuse=tf.AUTO_REUSE):
 
             step_model = policy(nbatch=nenvs, nsteps=1, observ_placeholder=step_ob_placeholder, sess=sess)
             train_model = policy(nbatch=nbatch, nsteps=nsteps, observ_placeholder=train_ob_placeholder, sess=sess)
 
 
-        params = find_trainable_variables("acer_model")
+        params = find_trainable_variables('acer_model'+name)
         print("Params {}".format(len(params)))
         for var in params:
             print(var)
@@ -93,7 +93,7 @@ class Model(object):
             print(v.name)
             return v
 
-        with tf.variable_scope("acer_model", custom_getter=custom_getter, reuse=True):
+        with tf.variable_scope('acer_model'+name, custom_getter=custom_getter, reuse=True):
             polyak_model = policy(nbatch=nbatch, nsteps=nsteps, observ_placeholder=train_ob_placeholder, sess=sess)
 
         # Notation: (var) = batch variable, (var)s = seqeuence variable, (var)_i = variable index by action at step i
@@ -275,7 +275,7 @@ class Acer():
 def learn(network, env, seed=None, nsteps=20, total_timesteps=int(80e6), q_coef=0.5, ent_coef=0.01,
           max_grad_norm=10, lr=7e-4, lrschedule='linear', rprop_epsilon=1e-5, rprop_alpha=0.99, gamma=0.99,
           log_interval=100, buffer_size=50000, replay_ratio=4, replay_start=10000, c=10.0,
-          trust_region=True, alpha=0.99, delta=1, load_path=None, **network_kwargs):
+          trust_region=True, alpha=0.99, delta=1, load_path=None, name="", **network_kwargs):
 
     '''
     Main entrypoint for ACER (Actor-Critic with Experience Replay) algorithm (https://arxiv.org/pdf/1611.01224.pdf)
@@ -347,7 +347,7 @@ def learn(network, env, seed=None, nsteps=20, total_timesteps=int(80e6), q_coef=
     if not isinstance(env, VecFrameStack):
         env = VecFrameStack(env, 1)
 
-    policy = build_policy(env, network, estimate_q=True, **network_kwargs)
+    policy = build_policy(env, network, estimate_q=True, name=name, **network_kwargs)
     nenvs = env.num_envs
     ob_space = env.observation_space
     ac_space = env.action_space
@@ -357,7 +357,7 @@ def learn(network, env, seed=None, nsteps=20, total_timesteps=int(80e6), q_coef=
                   ent_coef=ent_coef, q_coef=q_coef, gamma=gamma,
                   max_grad_norm=max_grad_norm, lr=lr, rprop_alpha=rprop_alpha, rprop_epsilon=rprop_epsilon,
                   total_timesteps=total_timesteps, lrschedule=lrschedule, c=c,
-                  trust_region=trust_region, alpha=alpha, delta=delta)
+                  trust_region=trust_region, alpha=alpha, delta=delta,name=name)
     if load_path is not None:
         model.load(load_path)
 
